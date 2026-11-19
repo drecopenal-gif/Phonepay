@@ -1,0 +1,1615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <title>PhonePay — Verified Smart Gateway</title>
+
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ==========================================================================
+       1. DESIGN TOKENS & RESET
+       ========================================================================== */
+    :root {
+      --bg-obsidian: #06050d;
+      --bg-surface: rgba(18, 14, 34, 0.72);
+      --bg-surface-strong: rgba(22, 17, 42, 0.88);
+      --border-hairline: rgba(255, 255, 255, 0.09);
+      --border-glow: rgba(168, 85, 247, 0.55);
+
+      --brand-primary: #6739B7;
+      --brand-secondary: #8b5cf6;
+      --brand-accent: #c084fc;
+      --gold-start: #fde047;
+      --gold-mid: #f59e0b;
+      --gold-end: #ea580c;
+
+      --telegram-start: #2AABEE;
+      --telegram-end: #229ED9;
+
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+
+      --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      min-height: 100%;
+      background-color: var(--bg-obsidian);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      line-height: 1.5;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      background-image:
+        radial-gradient(circle at 18% 12%, rgba(103, 57, 183, 0.24) 0%, transparent 45%),
+        radial-gradient(circle at 84% 85%, rgba(79, 70, 229, 0.18) 0%, transparent 48%),
+        linear-gradient(180deg, #070510 0%, #05040a 100%);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* ==========================================================================
+       2. AMBIENT BACKGROUND & KEYFRAMES
+       ========================================================================== */
+    .ambient-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(70px);
+      opacity: 0.55;
+      animation: orbFloat 9s ease-in-out infinite;
+    }
+
+    .orb-1 {
+      width: 360px;
+      height: 360px;
+      top: -110px;
+      left: -90px;
+      background: radial-gradient(circle, rgba(124, 58, 237, 0.55), transparent 70%);
+    }
+
+    .orb-2 {
+      width: 340px;
+      height: 340px;
+      bottom: -110px;
+      right: -80px;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.4), transparent 70%);
+      animation-delay: -4.5s;
+    }
+
+    .grid-overlay {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
+      background-size: 36px 36px;
+      mask-image: radial-gradient(ellipse at center, black 35%, transparent 80%);
+      -webkit-mask-image: radial-gradient(ellipse at center, black 35%, transparent 80%);
+    }
+
+    @keyframes orbFloat {
+      0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+      50% { transform: translate3d(14px, -18px, 0) scale(1.06); }
+    }
+
+    @keyframes cardEnter {
+      0% { opacity: 0; transform: translateY(18px) scale(0.98); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes badgePop {
+      0% { opacity: 0; transform: scale(0.55) translateY(6px); }
+      75% { opacity: 1; transform: scale(1.07) translateY(-1px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    @keyframes shimmerSweep {
+      0% { transform: translateX(-120%) skewX(-18deg); }
+      100% { transform: translateX(260%) skewX(-18deg); }
+    }
+
+    @keyframes pulseRing {
+      0% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.45); }
+      70% { box-shadow: 0 0 0 10px rgba(168, 85, 247, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0); }
+    }
+
+    @keyframes telegramFloat {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-6px) rotate(-3deg); }
+    }
+
+    @keyframes shakeError {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-7px); }
+      40%, 80% { transform: translateX(7px); }
+    }
+
+    .shake {
+      animation: shakeError 0.36s ease-in-out;
+    }
+
+    /* ==========================================================================
+       3. HEADER & 5-CLICK SECRET TRIGGER
+       ========================================================================== */
+    .app-header {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 540px;
+      margin: 0 auto;
+      padding: 20px 18px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .brand-trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: transparent;
+      border: none;
+      color: inherit;
+      cursor: pointer;
+      padding: 6px 8px 6px 4px;
+      border-radius: 18px;
+      text-align: left;
+      user-select: none;
+      transition: transform 0.16s ease, background-color 0.2s ease;
+    }
+
+    .brand-trigger:active {
+      transform: scale(0.96);
+    }
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 15px;
+      background: linear-gradient(140deg, #7c3aed 0%, #5b21b6 60%, #3b0764 100%);
+      border: 1px solid rgba(216, 180, 254, 0.35);
+      box-shadow: 0 8px 22px -4px rgba(103, 57, 183, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 21px;
+      font-weight: 800;
+      color: #ffffff;
+      flex-shrink: 0;
+    }
+
+    .brand-title-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .brand-title {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      background: linear-gradient(95deg, #ffffff 10%, #e9d5ff 60%, #c084fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .verified-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: 9.5px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #d8b4fe;
+      background: rgba(139, 92, 246, 0.18);
+      border: 1px solid rgba(192, 132, 252, 0.32);
+    }
+
+    .brand-subtitle {
+      font-size: 11.5px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-top: 1px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(20, 16, 38, 0.78);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-hairline);
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #cbd5e1;
+      white-space: nowrap;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+    }
+
+    /* ==========================================================================
+       4. MAIN GLASS CONTAINER
+       ========================================================================== */
+    .main-stage {
+      position: relative;
+      z-index: 10;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 16px 28px;
+    }
+
+    .glass-panel {
+      width: 100%;
+      max-width: 440px;
+      border-radius: 28px;
+      padding: 28px 22px;
+      background: linear-gradient(165deg, rgba(25, 19, 46, 0.8) 0%, rgba(12, 9, 24, 0.92) 100%);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow:
+        0 30px 65px -15px rgba(0, 0, 0, 0.82),
+        0 0 0 1px rgba(139, 92, 246, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+      animation: cardEnter 0.5s var(--ease-smooth) both;
+    }
+
+    @media (min-width: 480px) {
+      .glass-panel {
+        padding: 32px 28px;
+      }
+    }
+
+    .top-highlight-line {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 68%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #a855f7, #38bdf8, transparent);
+    }
+
+    /* ==========================================================================
+       5. DEFAULT LANDING VIEW (TELEGRAM CTA CARD)
+       ========================================================================== */
+    .telegram-view {
+      text-align: center;
+    }
+
+    .tg-icon-wrapper {
+      width: 76px;
+      height: 76px;
+      margin: 4px auto 20px;
+      border-radius: 24px;
+      background: linear-gradient(145deg, rgba(42, 171, 238, 0.22), rgba(34, 158, 217, 0.08));
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      box-shadow: 0 14px 32px -8px rgba(42, 171, 238, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: telegramFloat 3.6s ease-in-out infinite;
+    }
+
+    .tg-icon-circle {
+      width: 52px;
+      height: 52px;
+      border-radius: 17px;
+      background: linear-gradient(135deg, var(--telegram-start), var(--telegram-end));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      box-shadow: 0 6px 18px rgba(34, 158, 217, 0.5);
+    }
+
+    .eyebrow-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: #bae6fd;
+      background: rgba(14, 165, 233, 0.14);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      margin-bottom: 12px;
+    }
+
+    .hero-heading {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+      line-height: 1.28;
+    }
+
+    .hero-desc {
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      margin: 10px auto 26px;
+      max-width: 330px;
+      line-height: 1.55;
+    }
+
+    .tg-cta-btn {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 11px;
+      width: 100%;
+      padding: 16px 22px;
+      border-radius: 18px;
+      text-decoration: none;
+      font-size: 15.5px;
+      font-weight: 800;
+      color: #ffffff;
+      background: linear-gradient(135deg, #2AABEE 0%, #1d8fe1 55%, #2563eb 100%);
+      border: 1px solid rgba(186, 230, 253, 0.45);
+      box-shadow:
+        0 14px 32px -6px rgba(42, 171, 238, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      overflow: hidden;
+      transition: transform 0.2s var(--ease-spring), box-shadow 0.25s ease;
+    }
+
+    .tg-cta-btn::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 42%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.34), transparent);
+      animation: shimmerSweep 3s infinite;
+    }
+
+    .tg-cta-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 38px -6px rgba(42, 171, 238, 0.65);
+    }
+
+    .tg-cta-btn:active {
+      transform: scale(0.98);
+    }
+
+    /* ==========================================================================
+       6. GENERATED LINK VIEW (3 UNIFORM BUTTONS + LOCKED RECOMMENDED BADGE)
+       ========================================================================== */
+    .gateway-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .gateway-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #e9d5ff;
+      background: rgba(139, 92, 246, 0.16);
+      border: 1px solid rgba(192, 132, 252, 0.3);
+      margin-bottom: 10px;
+    }
+
+    .gateway-title {
+      font-size: 21px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+    }
+
+    .gateway-subtitle {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    .actions-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .action-card {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      width: 100%;
+      min-height: 76px;
+      padding: 16px 16px;
+      border-radius: 20px;
+      text-decoration: none;
+      background: rgba(255, 255, 255, 0.038);
+      border: 1px solid rgba(255, 255, 255, 0.11);
+      transition: transform 0.22s var(--ease-spring), border-color 0.22s ease, background-color 0.22s ease, box-shadow 0.22s ease;
+      animation: cardEnter 0.45s var(--ease-smooth) both;
+    }
+
+    .action-card:hover {
+      background: rgba(255, 255, 255, 0.072);
+      border-color: rgba(192, 132, 252, 0.42);
+      transform: translateY(-2px);
+    }
+
+    .action-card:active {
+      transform: scale(0.985);
+    }
+
+    /* Locked Admin Recommended Highlight */
+    .action-card.is-recommended {
+      background: linear-gradient(135deg, rgba(103, 57, 183, 0.36) 0%, rgba(36, 21, 70, 0.9) 55%, rgba(17, 24, 39, 0.94) 100%);
+      border: 1.5px solid rgba(192, 132, 252, 0.85);
+      box-shadow:
+        0 14px 34px -8px rgba(139, 92, 246, 0.48),
+        0 0 0 1px rgba(216, 180, 254, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      animation: cardEnter 0.45s var(--ease-smooth) both, pulseRing 2.8s infinite 0.6s;
+    }
+
+    .action-card.is-recommended:hover {
+      border-color: #e9d5ff;
+      box-shadow: 0 18px 40px -6px rgba(139, 92, 246, 0.62);
+    }
+
+    .rec-badge {
+      position: absolute;
+      top: -11px;
+      right: 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 11px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #0f172a;
+      background: linear-gradient(90deg, var(--gold-start), var(--gold-mid), var(--gold-end));
+      box-shadow: 0 6px 16px rgba(245, 158, 11, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      animation: badgePop 0.45s var(--ease-spring) 0.15s both;
+      z-index: 2;
+    }
+
+    .shimmer-clip {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .shimmer-clip::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 38%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(233, 213, 255, 0.16), transparent);
+      animation: shimmerSweep 3.4s infinite;
+    }
+
+    .action-left {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .action-num {
+      width: 40px;
+      height: 40px;
+      border-radius: 13px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 800;
+      color: #e9d5ff;
+      background: rgba(124, 58, 237, 0.2);
+      border: 1px solid rgba(167, 139, 250, 0.28);
+    }
+
+    .is-recommended .action-num {
+      color: #ffffff;
+      background: linear-gradient(135deg, #8b5cf6, #6366f1);
+      border-color: rgba(233, 213, 255, 0.55);
+      box-shadow: 0 6px 16px rgba(124, 58, 237, 0.5);
+    }
+
+    .action-text-wrap {
+      min-width: 0;
+      flex: 1;
+    }
+
+    /* STRICT UNIFORM FONT SIZE ACROSS ALL 3 BUTTONS REGARDLESS OF LENGTH */
+    .uniform-btn-title {
+      font-size: 15.5px !important;
+      font-weight: 700 !important;
+      line-height: 1.35 !important;
+      letter-spacing: -0.01em;
+      color: #ffffff;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .action-sub {
+      font-size: 11.5px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .is-recommended .action-sub {
+      color: #ddd6fe;
+    }
+
+    .action-arrow {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.06);
+      color: #cbd5e1;
+      transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .is-recommended .action-arrow {
+      background: linear-gradient(135deg, #8b5cf6, #6366f1);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(139, 92, 246, 0.45);
+    }
+
+    .action-card:hover .action-arrow {
+      transform: translateX(2px);
+    }
+
+    .trust-strip {
+      margin-top: 24px;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .trust-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ==========================================================================
+       7. MODALS (PASSWORD & ADMIN PANEL)
+       ========================================================================== */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: rgba(3, 2, 8, 0.82);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      overflow-y: auto;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 400px;
+      border-radius: 26px;
+      padding: 26px 22px;
+      background: linear-gradient(165deg, rgba(28, 22, 52, 0.95), rgba(13, 10, 26, 0.98));
+      border: 1px solid rgba(192, 132, 252, 0.28);
+      box-shadow: 0 28px 70px rgba(0, 0, 0, 0.85);
+      position: relative;
+      animation: cardEnter 0.3s var(--ease-spring) both;
+    }
+
+    .modal-card.admin-wide {
+      max-width: 520px;
+      max-height: 90vh;
+      overflow-y: auto;
+      margin: auto;
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.05);
+      color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .modal-close-btn:hover {
+      background: rgba(255, 255, 255, 0.14);
+      color: #ffffff;
+    }
+
+    .modal-icon-box {
+      width: 46px;
+      height: 46px;
+      border-radius: 15px;
+      background: rgba(124, 58, 237, 0.22);
+      border: 1px solid rgba(167, 139, 250, 0.35);
+      color: #d8b4fe;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+    }
+
+    .modal-title {
+      font-size: 19px;
+      font-weight: 800;
+      color: #ffffff;
+    }
+
+    .modal-sub {
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      margin-top: 3px;
+    }
+
+    .field-group {
+      margin-top: 16px;
+    }
+
+    .field-label {
+      display: block;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 6px;
+    }
+
+    .input-control {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(6, 5, 14, 0.78);
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      color: #ffffff;
+      font-family: var(--font-sans);
+      font-size: 13.5px;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .input-control::placeholder {
+      color: #64748b;
+    }
+
+    .input-control:focus {
+      border-color: #a855f7;
+      box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.18);
+    }
+
+    .error-text {
+      font-size: 12px;
+      font-weight: 600;
+      color: #fb7185;
+      margin-top: 7px;
+    }
+
+    .primary-btn {
+      width: 100%;
+      margin-top: 18px;
+      padding: 13.5px 18px;
+      border-radius: 15px;
+      border: none;
+      font-family: var(--font-sans);
+      font-size: 14px;
+      font-weight: 800;
+      color: #ffffff;
+      background: linear-gradient(135deg, #6739B7 0%, #7c3aed 55%, #4f46e5 100%);
+      box-shadow: 0 10px 26px -6px rgba(124, 58, 237, 0.6);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.18s ease, filter 0.2s ease;
+    }
+
+    .primary-btn:hover {
+      filter: brightness(1.08);
+    }
+
+    .primary-btn:active {
+      transform: scale(0.98);
+    }
+
+    /* Admin Panel Config Blocks */
+    .admin-header-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+      padding-right: 36px;
+    }
+
+    .admin-blocks {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .config-box {
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      transition: border-color 0.25s ease, background-color 0.25s ease;
+    }
+
+    .config-box.active-rec-box {
+      border-color: rgba(245, 158, 11, 0.55);
+      background: rgba(103, 57, 183, 0.16);
+    }
+
+    .config-box-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .config-tag {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #d8b4fe;
+    }
+
+    .mini-rec-pill {
+      padding: 2px 9px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 800;
+      color: #0f172a;
+      background: linear-gradient(90deg, var(--gold-start), var(--gold-mid));
+      animation: badgePop 0.35s var(--ease-spring) both;
+    }
+
+    .two-col-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    @media (min-width: 480px) {
+      .two-col-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .rec-selector-box {
+      margin-top: 14px;
+      padding: 15px;
+      border-radius: 18px;
+      background: rgba(88, 28, 135, 0.2);
+      border: 1px solid rgba(192, 132, 252, 0.25);
+    }
+
+    .rec-pills-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .rec-num-btn {
+      padding: 11px;
+      border-radius: 13px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.05);
+      color: #e2e8f0;
+      font-family: var(--font-sans);
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.2s var(--ease-spring);
+    }
+
+    .rec-num-btn:hover {
+      border-color: rgba(192, 132, 252, 0.5);
+    }
+
+    .rec-num-btn.selected {
+      color: #0f172a;
+      border-color: #fde047;
+      background: linear-gradient(135deg, var(--gold-start), var(--gold-mid));
+      box-shadow: 0 8px 20px -4px rgba(245, 158, 11, 0.5);
+      transform: translateY(-1px);
+    }
+
+    /* Generated Link Output Box */
+    .output-panel {
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(5, 4, 12, 0.9);
+      border: 1px solid rgba(52, 211, 153, 0.35);
+      animation: cardEnter 0.3s var(--ease-smooth) both;
+    }
+
+    .output-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .ready-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #34d399;
+    }
+
+    .preview-anchor {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #d8b4fe;
+      text-decoration: none;
+    }
+
+    .preview-anchor:hover {
+      text-decoration: underline;
+    }
+
+    .copy-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .url-readonly {
+      flex: 1;
+      min-width: 0;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #e2e8f0;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      outline: none;
+    }
+
+    .copy-btn {
+      flex-shrink: 0;
+      padding: 10px 16px;
+      border-radius: 12px;
+      border: none;
+      background: #10b981;
+      color: #042f2e;
+      font-family: var(--font-sans);
+      font-size: 12.5px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: background-color 0.2s ease, transform 0.15s ease;
+    }
+
+    .copy-btn:hover {
+      background: #34d399;
+    }
+
+    .copy-btn:active {
+      transform: scale(0.96);
+    }
+
+    /* ==========================================================================
+       8. TOAST NOTIFICATIONS & FOOTER
+       ========================================================================== */
+    .toast-stack {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 99;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .toast-item {
+      padding: 11px 16px;
+      border-radius: 14px;
+      font-size: 12.5px;
+      font-weight: 700;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.55);
+      animation: badgePop 0.3s var(--ease-spring) both;
+    }
+
+    .toast-success {
+      background: rgba(6, 78, 59, 0.92);
+      border: 1px solid rgba(52, 211, 153, 0.45);
+      color: #a7f3d0;
+    }
+
+    .toast-error {
+      background: rgba(136, 19, 55, 0.92);
+      border: 1px solid rgba(251, 113, 133, 0.45);
+      color: #fecdd3;
+    }
+
+    .app-footer {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      padding: 14px 16px 22px;
+      font-size: 11.5px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient Visual Layer -->
+  <div class="ambient-layer" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="grid-overlay"></div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-stack"></div>
+
+  <!-- Header with Secret 5-Click Admin Trigger -->
+  <header class="app-header">
+    <button id="brand-trigger" type="button" class="brand-trigger" aria-label="PhonePay Header">
+      <div class="brand-icon">पे</div>
+      <div>
+        <div class="brand-title-row">
+          <span class="brand-title">PhonePay</span>
+          <span class="verified-pill">Verified</span>
+        </div>
+        <div class="brand-subtitle">Instant Action &amp; Smart Gateway</div>
+      </div>
+    </button>
+
+    <div class="status-badge">
+      <span class="status-dot"></span>
+      <span id="header-status-text">Official Gateway</span>
+    </div>
+  </header>
+
+  <!-- Main Stage -->
+  <main class="main-stage">
+    <div class="glass-panel">
+      <div class="top-highlight-line"></div>
+
+      <!-- ==================================================================
+           VIEW A: DEFAULT MAIN LANDING PAGE (NO GENERATED LINK)
+           ================================================================== -->
+      <section id="default-telegram-view" class="telegram-view">
+        <div class="tg-icon-wrapper">
+          <div class="tg-icon-circle">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="eyebrow-chip">Official Community Channel</div>
+        <h1 class="hero-heading">Stay Connected &amp; Never Miss an Update</h1>
+        <p class="hero-desc">
+          Join our official Telegram channel for instant alerts, exclusive links, and real-time announcements.
+        </p>
+
+        <a
+          href="https://t.me/+3tZAFcCCGjlmNDZl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="tg-cta-btn"
+        >
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+          </svg>
+          <span>Join Telegram for Updates</span>
+        </a>
+
+        <div class="trust-strip">
+          <span class="trust-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>Verified Channel</span>
+          </span>
+          <span>Instant Access</span>
+        </div>
+      </section>
+
+      <!-- ==================================================================
+           VIEW B: GENERATED LINK VIEW (3 UNIFORM BUTTONS + LOCKED TAG)
+           ================================================================== -->
+      <section id="shared-links-view" class="hidden">
+        <div class="gateway-header">
+          <div class="gateway-eyebrow">Select An Option Below</div>
+          <h2 class="gateway-title">Choose Your Preferred Action</h2>
+          <p class="gateway-subtitle">Tap any button below to proceed securely</p>
+        </div>
+
+        <div id="public-buttons-container" class="actions-stack">
+          <!-- Dynamically populated with 3 uniform cards -->
+        </div>
+
+        <div class="trust-strip">
+          <span class="trust-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+            </svg>
+            <span>256-Bit Verified Gateway</span>
+          </span>
+          <span style="color: #d8b4fe; font-weight: 600;">Instant Redirect</span>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    &copy; <span id="current-year"></span> PhonePay Smart Gateway. All rights reserved.
+  </footer>
+
+  <!-- ==================================================================
+       MODAL 1: PASSWORD PROMPT (PASSWORD = 001)
+       ================================================================== -->
+  <div id="password-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="pwd-modal-title">
+    <div id="password-modal-card" class="modal-card">
+      <button id="close-password-btn" type="button" class="modal-close-btn" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+
+      <div class="modal-icon-box">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+        </svg>
+      </div>
+
+      <h3 id="pwd-modal-title" class="modal-title">Admin Panel Access</h3>
+      <p class="modal-sub">Enter your secret admin password to unlock controls.</p>
+
+      <form id="password-form">
+        <div class="field-group">
+          <label for="admin-pass-input" class="field-label">Admin Password</label>
+          <input
+            id="admin-pass-input"
+            type="password"
+            inputmode="numeric"
+            autocomplete="off"
+            placeholder="Enter password"
+            class="input-control"
+            required
+          />
+          <p id="password-error-msg" class="error-text hidden">Incorrect password. Please try again.</p>
+        </div>
+
+        <button type="submit" class="primary-btn">
+          <span>Unlock Admin Panel</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================================================================
+       MODAL 2: ADMIN PANEL (3 BUTTONS + 1/2/3 RECOMMENDED + LINK GEN)
+       ================================================================== -->
+  <div id="admin-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="admin-modal-title">
+    <div class="modal-card admin-wide">
+      <button id="close-admin-btn" type="button" class="modal-close-btn" aria-label="Close Admin Panel">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+
+      <div class="admin-header-bar">
+        <div class="modal-icon-box" style="margin-bottom: 0;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+          </svg>
+        </div>
+        <div>
+          <h3 id="admin-modal-title" class="modal-title">PhonePay Admin Panel</h3>
+          <p class="modal-sub">Set button texts, destination links &amp; Recommended tag</p>
+        </div>
+      </div>
+
+      <div class="admin-blocks">
+        <!-- Button 1 -->
+        <div id="config-card-1" class="config-box active-rec-box">
+          <div class="config-box-top">
+            <span class="config-tag">Button 1</span>
+            <span id="rec-indicator-1" class="mini-rec-pill">★ Recommended</span>
+          </div>
+          <div class="two-col-grid">
+            <div>
+              <label for="input-text-1" class="field-label">Button 1 Text</label>
+              <input id="input-text-1" type="text" placeholder="e.g. MOBILE SOUND" class="input-control" />
+            </div>
+            <div>
+              <label for="input-url-1" class="field-label">Open Link (URL)</label>
+              <input id="input-url-1" type="url" placeholder="https://example.com/link1" class="input-control" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Button 2 -->
+        <div id="config-card-2" class="config-box">
+          <div class="config-box-top">
+            <span class="config-tag">Button 2</span>
+            <span id="rec-indicator-2" class="mini-rec-pill hidden">★ Recommended</span>
+          </div>
+          <div class="two-col-grid">
+            <div>
+              <label for="input-text-2" class="field-label">Button 2 Text</label>
+              <input id="input-text-2" type="text" placeholder="e.g. DOWNLOAD APP" class="input-control" />
+            </div>
+            <div>
+              <label for="input-url-2" class="field-label">Open Link (URL)</label>
+              <input id="input-url-2" type="url" placeholder="https://example.com/link2" class="input-control" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Button 3 -->
+        <div id="config-card-3" class="config-box">
+          <div class="config-box-top">
+            <span class="config-tag">Button 3</span>
+            <span id="rec-indicator-3" class="mini-rec-pill hidden">★ Recommended</span>
+          </div>
+          <div class="two-col-grid">
+            <div>
+              <label for="input-text-3" class="field-label">Button 3 Text</label>
+              <input id="input-text-3" type="text" placeholder="e.g. VIP ACCESS" class="input-control" />
+            </div>
+            <div>
+              <label for="input-url-3" class="field-label">Open Link (URL)</label>
+              <input id="input-url-3" type="url" placeholder="https://example.com/link3" class="input-control" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1, 2, 3 Recommended Selector -->
+      <div class="rec-selector-box">
+        <div class="config-tag" style="color: #ffffff;">Highlight "Recommended" Tag On Button:</div>
+        <p class="modal-sub" style="font-size: 11.5px;">
+          Tap 1, 2, or 3 below — visitors opening your generated link will see the glowing Recommended badge locked on that button.
+        </p>
+        <div class="rec-pills-grid">
+          <button type="button" class="rec-num-btn selected" data-rec="1">1</button>
+          <button type="button" class="rec-num-btn" data-rec="2">2</button>
+          <button type="button" class="rec-num-btn" data-rec="3">3</button>
+        </div>
+      </div>
+
+      <!-- Generate Shareable Link Button -->
+      <button id="generate-link-btn" type="button" class="primary-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+        </svg>
+        <span>Generate Shareable Link</span>
+      </button>
+
+      <!-- Generated URL Output -->
+      <div id="generated-link-box" class="output-panel hidden">
+        <div class="output-top">
+          <span class="ready-label">
+            <span>●</span> Shareable Link Ready
+          </span>
+          <a id="preview-live-link" href="#" class="preview-anchor">Preview Live Link →</a>
+        </div>
+        <div class="copy-row">
+          <input id="generated-url-input" type="text" readonly class="url-readonly" />
+          <button id="copy-url-btn" type="button" class="copy-btn">Copy</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================================
+       VANILLA JAVASCRIPT LOGIC
+       ================================================================== -->
+  <script>
+    (function () {
+      'use strict';
+
+      // Set current footer year
+      document.getElementById('current-year').textContent = new Date().getFullYear();
+
+      // Strictly enforce Admin Password = 001 (and clear any old cached keys)
+      const ADMIN_PASSWORD = '001';
+      try {
+        localStorage.removeItem('phonepay_hub_admin_pass');
+      } catch (e) {}
+
+      const TELEGRAM_FALLBACK_URL = 'https://t.me/+3tZAFcCCGjlmNDZl';
+
+      // Toast helper (never uses alert)
+      function showToast(text, type) {
+        const container = document.getElementById('toast-container');
+        const el = document.createElement('div');
+        el.className = 'toast-item ' + (type === 'error' ? 'toast-error' : 'toast-success');
+        el.textContent = text;
+        container.appendChild(el);
+        setTimeout(function () {
+          el.style.opacity = '0';
+          el.style.transform = 'translateY(-6px)';
+          el.style.transition = 'all 0.25s ease';
+          setTimeout(function () { el.remove(); }, 260);
+        }, 2800);
+      }
+
+      // UTF-8 safe Base64 URL encoding/decoding (works with Gujarati, Hindi, Emojis, English)
+      function encodePayload(data) {
+        const json = JSON.stringify(data);
+        const bytes = new TextEncoder().encode(json);
+        let binary = '';
+        for (let i = 0; i < bytes.length; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      }
+
+      function decodePayload(str) {
+        try {
+          let b64 = str.replace(/-/g, '+').replace(/_/g, '/');
+          while (b64.length % 4) b64 += '=';
+          const binary = atob(b64);
+          const bytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+          }
+          const json = new TextDecoder().decode(bytes);
+          return JSON.parse(json);
+        } catch (err) {
+          return null;
+        }
+      }
+
+      function normalizeUrl(raw) {
+        if (!raw || typeof raw !== 'string') return TELEGRAM_FALLBACK_URL;
+        const trimmed = raw.trim();
+        if (!trimmed) return TELEGRAM_FALLBACK_URL;
+        if (/^https?:\/\//i.test(trimmed)) return trimmed;
+        return 'https://' + trimmed;
+      }
+
+      function escapeHTML(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+      }
+
+      function copyToClipboard(inputEl) {
+        inputEl.select();
+        inputEl.setSelectionRange(0, 99999);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(inputEl.value).catch(function () {
+            document.execCommand('copy');
+          });
+        } else {
+          document.execCommand('copy');
+        }
+      }
+
+      // =====================================================================
+      // 1. SECRET 5-CLICK HEADER TRIGGER & PASSWORD MODAL
+      // =====================================================================
+      let tapCount = 0;
+      let tapResetTimer = null;
+
+      const brandTrigger = document.getElementById('brand-trigger');
+      const passwordModal = document.getElementById('password-modal');
+      const passwordCard = document.getElementById('password-modal-card');
+      const passwordForm = document.getElementById('password-form');
+      const passwordInput = document.getElementById('admin-pass-input');
+      const passwordError = document.getElementById('password-error-msg');
+      const adminModal = document.getElementById('admin-modal');
+
+      brandTrigger.addEventListener('click', function () {
+        tapCount += 1;
+        clearTimeout(tapResetTimer);
+
+        if (tapCount >= 5) {
+          tapCount = 0;
+          passwordError.classList.add('hidden');
+          passwordInput.value = '';
+          passwordModal.classList.remove('hidden');
+          setTimeout(function () { passwordInput.focus(); }, 60);
+        } else {
+          tapResetTimer = setTimeout(function () {
+            tapCount = 0;
+          }, 3000);
+        }
+      });
+
+      document.getElementById('close-password-btn').addEventListener('click', function () {
+        passwordModal.classList.add('hidden');
+      });
+
+      passwordModal.addEventListener('click', function (e) {
+        if (e.target === passwordModal) passwordModal.classList.add('hidden');
+      });
+
+      passwordForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (passwordInput.value.trim() === ADMIN_PASSWORD) {
+          passwordModal.classList.add('hidden');
+          openAdminPanel();
+          showToast('Admin Panel Unlocked!', 'success');
+        } else {
+          passwordError.classList.remove('hidden');
+          passwordCard.classList.remove('shake');
+          void passwordCard.offsetWidth; // trigger reflow for shake replay
+          passwordCard.classList.add('shake');
+          passwordInput.focus();
+        }
+      });
+
+      // =====================================================================
+      // 2. ADMIN PANEL & RECOMMENDED TAG SELECTION (1, 2, 3)
+      // =====================================================================
+      let selectedRecommended = 1;
+
+      function setAdminRecommended(index) {
+        selectedRecommended = index;
+        [1, 2, 3].forEach(function (n) {
+          const box = document.getElementById('config-card-' + n);
+          const pill = document.getElementById('rec-indicator-' + n);
+          const btn = document.querySelector('.rec-num-btn[data-rec="' + n + '"]');
+
+          if (n === index) {
+            box.classList.add('active-rec-box');
+            pill.classList.remove('hidden');
+            btn.classList.add('selected');
+          } else {
+            box.classList.remove('active-rec-box');
+            pill.classList.add('hidden');
+            btn.classList.remove('selected');
+          }
+        });
+      }
+
+      document.querySelectorAll('.rec-num-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          setAdminRecommended(Number(btn.getAttribute('data-rec')));
+        });
+      });
+
+      function openAdminPanel() {
+        const current = readConfigFromUrl();
+        if (current && Array.isArray(current.buttons)) {
+          current.buttons.forEach(function (item, idx) {
+            const num = idx + 1;
+            const tEl = document.getElementById('input-text-' + num);
+            const uEl = document.getElementById('input-url-' + num);
+            if (tEl) tEl.value = item.text || '';
+            if (uEl) uEl.value = item.url || '';
+          });
+          setAdminRecommended([1, 2, 3].includes(Number(current.rec)) ? Number(current.rec) : 1);
+        } else {
+          setAdminRecommended(selectedRecommended);
+        }
+        adminModal.classList.remove('hidden');
+      }
+
+      document.getElementById('close-admin-btn').addEventListener('click', function () {
+        adminModal.classList.add('hidden');
+      });
+
+      adminModal.addEventListener('click', function (e) {
+        if (e.target === adminModal) adminModal.classList.add('hidden');
+      });
+
+      document.getElementById('generate-link-btn').addEventListener('click', function () {
+        const buttons = [1, 2, 3].map(function (num) {
+          const textVal = document.getElementById('input-text-' + num).value.trim();
+          const urlVal = document.getElementById('input-url-' + num).value.trim();
+          return {
+            text: textVal || ('Option ' + num),
+            url: normalizeUrl(urlVal)
+          };
+        });
+
+        const encoded = encodePayload({
+          buttons: buttons,
+          rec: selectedRecommended
+        });
+
+        const baseUrl = window.location.origin + window.location.pathname;
+        const shareableUrl = baseUrl + '?data=' + encoded;
+
+        const outBox = document.getElementById('generated-link-box');
+        const urlInput = document.getElementById('generated-url-input');
+        const previewAnchor = document.getElementById('preview-live-link');
+
+        urlInput.value = shareableUrl;
+        previewAnchor.href = shareableUrl;
+        outBox.classList.remove('hidden');
+
+        copyToClipboard(urlInput);
+        showToast('Link generated & copied to clipboard!', 'success');
+      });
+
+      document.getElementById('copy-url-btn').addEventListener('click', function () {
+        const urlInput = document.getElementById('generated-url-input');
+        copyToClipboard(urlInput);
+        showToast('Copied to clipboard!', 'success');
+      });
+
+      // =====================================================================
+      // 3. PUBLIC ROUTER: DEFAULT TELEGRAM VIEW VS GENERATED LINK VIEW
+      // =====================================================================
+      function readConfigFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        const queryData = params.get('data');
+        if (queryData) {
+          const parsed = decodePayload(queryData);
+          if (parsed && Array.isArray(parsed.buttons) && parsed.buttons.length === 3) {
+            return parsed;
+          }
+        }
+        if (window.location.hash && window.location.hash.indexOf('#data=') === 0) {
+          const hashData = window.location.hash.slice(6);
+          const parsed = decodePayload(hashData);
+          if (parsed && Array.isArray(parsed.buttons) && parsed.buttons.length === 3) {
+            return parsed;
+          }
+        }
+        return null;
+      }
+
+      function renderSharedLinksView(config) {
+        document.getElementById('default-telegram-view').classList.add('hidden');
+        document.getElementById('shared-links-view').classList.remove('hidden');
+        document.getElementById('header-status-text').textContent = 'Verified Link';
+
+        const container = document.getElementById('public-buttons-container');
+        container.innerHTML = '';
+
+        const lockedRec = [1, 2, 3].includes(Number(config.rec)) ? Number(config.rec) : 1;
+
+        config.buttons.forEach(function (btnObj, idx) {
+          const num = idx + 1;
+          const isRec = num === lockedRec;
+          const labelText = (btnObj.text && btnObj.text.trim()) ? btnObj.text.trim() : ('Option ' + num);
+          const targetUrl = normalizeUrl(btnObj.url);
+
+          const card = document.createElement('a');
+          card.href = targetUrl;
+          card.target = '_blank';
+          card.rel = 'noopener noreferrer';
+          card.className = 'action-card' + (isRec ? ' is-recommended' : '');
+          card.style.animationDelay = (idx * 85) + 'ms';
+
+          card.innerHTML =
+            (isRec
+              ? '<div class="rec-badge"><span>★ RECOMMENDED</span></div><div class="shimmer-clip"></div>'
+              : '') +
+            '<div class="action-left">' +
+              '<div class="action-num">' + num + '</div>' +
+              '<div class="action-text-wrap">' +
+                '<div class="uniform-btn-title">' + escapeHTML(labelText) + '</div>' +
+                '<div class="action-sub">' +
+                  (isRec ? 'Most trusted &amp; fastest option' : 'Tap to continue securely') +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="action-arrow" aria-hidden="true">' +
+              '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">' +
+                '<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>' +
+              '</svg>' +
+            '</div>';
+
+          container.appendChild(card);
+        });
+      }
+
+      // Boot application
+      const activeConfig = readConfigFromUrl();
+      if (activeConfig) {
+        renderSharedLinksView(activeConfig);
+      }
+    })();
+  </script>
+</body>
+</html>
